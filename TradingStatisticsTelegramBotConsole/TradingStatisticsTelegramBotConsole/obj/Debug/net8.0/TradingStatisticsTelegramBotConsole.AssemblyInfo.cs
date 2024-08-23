@@ -10,12 +10,12 @@
 using System;
 using System.Reflection;
 
-[assembly: System.Reflection.AssemblyCompanyAttribute("TradingStatisticsTelegramBotCore")]
+[assembly: System.Reflection.AssemblyCompanyAttribute("TradingStatisticsTelegramBotConsole")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+93d6d2f73aaac3572c9a657a8fd57b54b9230e3a")]
-[assembly: System.Reflection.AssemblyProductAttribute("TradingStatisticsTelegramBotCore")]
-[assembly: System.Reflection.AssemblyTitleAttribute("TradingStatisticsTelegramBotCore")]
+[assembly: System.Reflection.AssemblyProductAttribute("TradingStatisticsTelegramBotConsole")]
+[assembly: System.Reflection.AssemblyTitleAttribute("TradingStatisticsTelegramBotConsole")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
 
 // Создано классом WriteCodeFragment MSBuild.
