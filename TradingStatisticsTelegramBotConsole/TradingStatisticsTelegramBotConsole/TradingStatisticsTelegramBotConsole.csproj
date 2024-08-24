@@ -8,8 +8,14 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <Reference Include="Telegram.Bot">
+        <HintPath>bin\Debug\net8.0\Telegram.Bot.dll</HintPath>
+      </Reference>
       <Reference Include="TradingStatisticsTelegramBotCore">
-        <HintPath>..\TradingStatisticsTelegramBotCore.dll</HintPath>
+        <HintPath>..\..\TradingStatisticsTelegramBotCore\bin\Debug\net8.0\TradingStatisticsTelegramBotCore.dll</HintPath>
+      </Reference>
+      <Reference Include="WTelegramClient">
+        <HintPath>bin\Debug\net8.0\WTelegramClient.dll</HintPath>
       </Reference>
     </ItemGroup>
 

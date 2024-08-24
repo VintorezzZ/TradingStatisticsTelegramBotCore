@@ -11,4 +11,11 @@
       <PackageReference Include="WTelegramClient" Version="4.1.8" />
     </ItemGroup>
 
+    <ItemGroup>
+        <Reference Include="C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App\8.0.8\*.dll" Exclude="C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App\8.0.8\aspnetcorev2_inprocess.dll">
+            <Private>False</Private>
+            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+        </Reference>
+    </ItemGroup>
+
 </Project>
