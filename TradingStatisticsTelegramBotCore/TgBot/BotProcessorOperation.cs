@@ -24,6 +24,8 @@ public class BotProcessorOperation
     private EBotState _currentStateType = EBotState.DateChoosing;
     private readonly EBotState _initialState = EBotState.DateChoosing;
     
+    private Chat _currentChat;
+    
     private readonly Dictionary<EBotState, EBotState> _botStatesChain = new()
     {
         { EBotState.DateChoosing, EBotState.AdditionalInfoRequesting },
@@ -33,10 +35,17 @@ public class BotProcessorOperation
     
     public BotProcessorOperation(CancellationTokenSource cts)
     {
+        Logger.Log += SendLogMessageToClient;
+        
         _cts = cts;
         _bot = new TelegramBotClient(Configuration.BOT_TOKEN, cancellationToken: _cts.Token);
     }
-    
+
+    private void SendLogMessageToClient(Logger.ELogType logType, string text)
+    {
+        _bot.SendTextMessageAsync(_currentChat, text);
+    }
+
     public async Task Process()
     {
         var me = await _bot.GetMeAsync(cancellationToken: _cts.Token);
@@ -45,7 +54,7 @@ public class BotProcessorOperation
         _bot.OnMessage += OnMessage;
         _bot.OnUpdate += OnUpdate;
 
-        Console.WriteLine($"@{me.Username} is running... Press Enter to terminate");
+        Logger.Log(Logger.ELogType.Message, $"@{me.Username} is running... Press Enter to terminate");
         //Console.ReadKey();
         //await _cts.CancelAsync(); // stop the bot
     }
@@ -57,10 +66,12 @@ public class BotProcessorOperation
 
     private async Task OnMessage(Message msg, UpdateType type)
     {
-        Console.WriteLine($"Message received from {msg.From}: {msg.Text}");
+        Logger.Log(Logger.ELogType.Message, $"Message received from {msg.From}: {msg.Text}");
         
         if (msg.Text?.ToLower() == "/start")
         {
+            _currentChat = msg.Chat;
+            
             await _bot.SendTextMessageAsync(msg.Chat, "Welcome! I am trading statistics bot.", cancellationToken: _cts.Token);
 
             _clientDataStorage = new ClientDataStorage();
@@ -83,8 +94,8 @@ public class BotProcessorOperation
         
         if (update is { CallbackQuery: { } query }) // non-null CallbackQuery
         {
-            Console.WriteLine($"Callback received from {query.From}: {query.Data}");
-
+            Logger.Log(Logger.ELogType.Message, $"Callback received from {query.From}: {query.Data}");
+            
             await _bot.AnswerCallbackQueryAsync(query.Id, $"You picked {query.Data}", cancellationToken: _cts.Token);
             
             if (await _currentState.Update(query.Message!.Chat, query.Data))
@@ -120,8 +131,8 @@ public class BotProcessorOperation
 
         _currentStateType = state;
         
-        Console.WriteLine($"Entered state: {_currentStateType}");
-
+        Logger.Log(Logger.ELogType.Message, $"Entered state: {_currentStateType}");
+        
         if (_currentState != null)
             await _currentState.Enter(chat);
     }

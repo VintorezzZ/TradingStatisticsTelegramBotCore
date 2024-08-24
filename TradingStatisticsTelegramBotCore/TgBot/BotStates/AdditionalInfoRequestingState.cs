@@ -97,8 +97,7 @@ public class AdditionalInfoRequestingState(TelegramBotClient bot, ClientDataStor
         clientDataStorage.AllPredictions = _allPredictions;
         clientDataStorage.SuccessfulPredictions = _successfulPredictions;
         clientDataStorage.StartDeposit = _startDeposit;
-        
-        Console.WriteLine($"Client has entered:\nAll predictions count: {_allPredictions}\nSuccessful predictions: {_successfulPredictions}\nStart deposit: {_startDeposit}");
+        Logger.Log(Logger.ELogType.Message, $"Client has entered:\nAll predictions count: {_allPredictions}\nSuccessful predictions: {_successfulPredictions}\nStart deposit: {_startDeposit}");
     }
 
     private async Task SendErrorMessage(Chat chat)

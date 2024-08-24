@@ -11,18 +11,26 @@ public class StatisticsCollectingState(TelegramBotClient bot, ClientDataStorage 
     
     public async Task Enter(Chat chat)
     {
-        Console.WriteLine("Collecting statistics...");
+        Logger.Log(Logger.ELogType.Message, "Collecting statistics...");
         
         await bot.SendTextMessageAsync(
             chat,
             "Collecting statistics...",
             cancellationToken: ctsToken);
 
-        await CreateStatistics(chat);
+        try
+        {
+            await CreateStatistics(chat);
         
-        await Exit(chat);
+            await Exit(chat);
         
-        await bot.SendTextMessageAsync(chat, "Enter /start to collect new data...", cancellationToken: ctsToken);
+            await bot.SendTextMessageAsync(chat, "Enter /start to collect new data...", cancellationToken: ctsToken);
+        }
+        catch (Exception e)
+        {
+            Logger.Log(Logger.ELogType.Error, e.Message);
+            throw;
+        }
     }
 
     public async Task<bool> Update(Chat chat, string? queryData)
@@ -52,8 +60,8 @@ public class StatisticsCollectingState(TelegramBotClient bot, ClientDataStorage 
         _statisticsText = TraderStatistics.GetText(statistics);
 
         clientDataStorage.StatisticsText = _statisticsText;
-        
-        Console.WriteLine("Collecting statistics complete! Sending message...");
+
+        Logger.Log(Logger.ELogType.Message, "Collecting statistics complete! Sending message...");
 
         await bot.SendTextMessageAsync(
             chat,

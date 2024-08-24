@@ -12,7 +12,7 @@ public class DealsCollector : IDisposable
 
     public async Task Init()
     {
-        _client = await CreateTelegramConnection();
+        await CreateTelegramConnection();
     }
     
     public async Task<List<DealData>> Collect(List<(DateTime, DateTime)> dateIntervals, string fromChatName)
@@ -39,8 +39,8 @@ public class DealsCollector : IDisposable
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error in message!\n {msg.message}\n");
-                Console.WriteLine(e);
+                Logger.Log(Logger.ELogType.Error, $"Error in message!\n {msg.message}\n");
+                Logger.Log(Logger.ELogType.Error, e.Message);
                 throw;
             }
         }
@@ -104,37 +104,45 @@ public class DealsCollector : IDisposable
     
     private async Task<Client> CreateTelegramConnection()
     {
-        Client? client = null;
-        
-        
         try
         {
             if (Configuration.IsAndroidPlatform)
-                _clientSessionFileStream = File.Open("/storage/emulated/0/Download/WTelegram.session", FileMode.OpenOrCreate);
-         
-            client = new Client(Configuration.GetConfig, _clientSessionFileStream);
-            
-            var myselfUser = await client.LoginUserIfNeeded();
+            {
+                Logger.Log(Logger.ELogType.Message, $"Opening or creating WTelegram.session...");
 
-            Console.WriteLine($"We are logged-in as {myselfUser} (id {myselfUser.id})");
-            return client;
+                _clientSessionFileStream = File.Open(Configuration.WTelegramSessionStorePath, FileMode.OpenOrCreate);
+                
+                Logger.Log(Logger.ELogType.Message, $"Succeed open or create WTelegram.session...");
+            }         
+
+            Logger.Log(Logger.ELogType.Message, $"Trying to login...");
+            
+            _client = new Client(Configuration.GetConfig, _clientSessionFileStream);
+            
+            var myselfUser = await _client.LoginUserIfNeeded();
+            
+            Logger.Log(Logger.ELogType.Message, $"We are logged-in as {myselfUser} (id {myselfUser.id})");
+            return _client;
         }
         catch
         {
-            client?.Dispose();
+            Dispose();
             throw;
         }
     }
 
     public void Dispose()
     {
-        _client.Dispose();
+        Logger.Log(Logger.ELogType.Warning, "Disposing...");
+
+        _client?.Reset();
+        _client?.Dispose();
         _client = null;
 
         if (_clientSessionFileStream != null)
         {
             _clientSessionFileStream.Dispose();
-            _clientSessionFileStream.Close();
+            _clientSessionFileStream?.Close();
         }
     }
 }

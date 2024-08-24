@@ -8,6 +8,7 @@ public class Configuration
     public const string PHONE_NUMBER = "+79218852563";
     public static Func<Task<string>> VerificationCodeGetter;
     public static bool IsAndroidPlatform;
+    public static string WTelegramSessionStorePath = "/storage/emulated/0/Download/WTelegram.session";
     
     public static string MessagesFromChatName = "Mike Sergeev | Trading | Chat";
     public static string ResultInChatName = "vintorez_trading";
