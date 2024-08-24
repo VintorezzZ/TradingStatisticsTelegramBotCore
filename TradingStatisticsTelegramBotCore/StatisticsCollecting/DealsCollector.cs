@@ -8,7 +8,8 @@ public class DealsCollector : IDisposable
     private const string DEAL_KEY_WORD = "#Deal";
     
     private Client _client;
-    
+    private FileStream _clientSessionFileStream;
+
     public async Task Init()
     {
         _client = await CreateTelegramConnection();
@@ -100,14 +101,19 @@ public class DealsCollector : IDisposable
         
         return messages;
     }
-
+    
     private async Task<Client> CreateTelegramConnection()
     {
         Client? client = null;
         
+        
         try
         {
-            client = new Client(Configuration.GetConfig);
+            if (Configuration.IsAndroidPlatform)
+                _clientSessionFileStream = File.Open("/storage/emulated/0/Download/WTelegram.session", FileMode.OpenOrCreate);
+         
+            client = new Client(Configuration.GetConfig, _clientSessionFileStream);
+            
             var myselfUser = await client.LoginUserIfNeeded();
 
             Console.WriteLine($"We are logged-in as {myselfUser} (id {myselfUser.id})");
@@ -124,5 +130,11 @@ public class DealsCollector : IDisposable
     {
         _client.Dispose();
         _client = null;
+
+        if (_clientSessionFileStream != null)
+        {
+            _clientSessionFileStream.Dispose();
+            _clientSessionFileStream.Close();
+        }
     }
 }

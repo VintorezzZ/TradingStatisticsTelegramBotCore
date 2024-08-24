@@ -7,6 +7,7 @@ public class Configuration
     public const string BOT_TOKEN = "7309601398:AAHJ7rdMNN07-C8PuoD0KQFksNj1YUl-hk8";
     public const string PHONE_NUMBER = "+79218852563";
     public static Func<Task<string>> VerificationCodeGetter;
+    public static bool IsAndroidPlatform;
     
     public static string MessagesFromChatName = "Mike Sergeev | Trading | Chat";
     public static string ResultInChatName = "vintorez_trading";
