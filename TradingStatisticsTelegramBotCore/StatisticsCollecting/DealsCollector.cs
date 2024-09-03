@@ -1,22 +1,19 @@
-﻿using TL;
+﻿using Microsoft.Extensions.Logging;
+using TL;
 using WTelegram;
 
 namespace TradingStatisticsTelegramBotCore;
 
-public class DealsCollector : IDisposable
+public class DealsCollector
 {
     private const string DEAL_KEY_WORD = "#Deal";
     
     private Client _client;
-    private FileStream _clientSessionFileStream;
-
-    public async Task Init()
-    {
-        await CreateTelegramConnection();
-    }
     
-    public async Task<List<DealData>> Collect(List<(DateTime, DateTime)> dateIntervals, string fromChatName)
+    public async Task<List<DealData>> Collect(List<(DateTime, DateTime)> dateIntervals, string fromChatName, Client client)
     {
+        _client = client;
+        
         var messages = await GetMessages(dateIntervals, fromChatName);
         var deals = GetDeals(messages);
         
@@ -25,6 +22,8 @@ public class DealsCollector : IDisposable
 
     private static List<DealData> GetDeals(IEnumerable<MessageBase> messages)
     {
+        Logger.Log((int) LogLevel.Debug, "Creating deals...");
+        
         var deals = new List<DealData>();
 
         foreach (var msgBase in messages)
@@ -39,8 +38,8 @@ public class DealsCollector : IDisposable
             }
             catch (Exception e)
             {
-                Logger.Log(Logger.ELogType.Error, $"Error in message!\n {msg.message}\n");
-                Logger.Log(Logger.ELogType.Error, e.Message);
+                Logger.Log((int)LogLevel.Error, $"Error in message!\n{msg.message}\n");
+                Logger.Log((int)LogLevel.Error, e.Message);
                 throw;
             }
         }
@@ -50,6 +49,8 @@ public class DealsCollector : IDisposable
 
     private async Task<List<MessageBase>> GetMessages(List<(DateTime, DateTime)> dateIntervals, string fromChatName)
     {
+        Logger.Log((int) LogLevel.Debug, "Getting messages...");
+        
         string inChatName = Configuration.ResultInChatName;
         long fromChatId = 0;
         long inChatId = 0;
@@ -100,49 +101,5 @@ public class DealsCollector : IDisposable
         }
         
         return messages;
-    }
-    
-    private async Task<Client> CreateTelegramConnection()
-    {
-        try
-        {
-            if (Configuration.IsAndroidPlatform)
-            {
-                Logger.Log(Logger.ELogType.Message, $"Opening or creating WTelegram.session...");
-
-                _clientSessionFileStream = File.Open(Configuration.WTelegramSessionStorePath, FileMode.OpenOrCreate);
-                
-                Logger.Log(Logger.ELogType.Message, $"Succeed open or create WTelegram.session...");
-            }         
-
-            Logger.Log(Logger.ELogType.Message, $"Trying to login...");
-            
-            _client = new Client(Configuration.GetConfig, _clientSessionFileStream);
-            
-            var myselfUser = await _client.LoginUserIfNeeded();
-            
-            Logger.Log(Logger.ELogType.Message, $"We are logged-in as {myselfUser} (id {myselfUser.id})");
-            return _client;
-        }
-        catch
-        {
-            Dispose();
-            throw;
-        }
-    }
-
-    public void Dispose()
-    {
-        Logger.Log(Logger.ELogType.Warning, "Disposing...");
-
-        _client?.Reset();
-        _client?.Dispose();
-        _client = null;
-
-        if (_clientSessionFileStream != null)
-        {
-            _clientSessionFileStream.Dispose();
-            _clientSessionFileStream?.Close();
-        }
     }
 }

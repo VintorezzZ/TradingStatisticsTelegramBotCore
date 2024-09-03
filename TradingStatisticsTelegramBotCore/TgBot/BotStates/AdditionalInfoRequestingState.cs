@@ -1,4 +1,5 @@
-﻿using Telegram.Bot;
+﻿using Microsoft.Extensions.Logging;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 
 namespace TradingStatisticsTelegramBotCore.BotStates;
@@ -18,14 +19,18 @@ public class AdditionalInfoRequestingState(TelegramBotClient bot, ClientDataStor
 
     private EDataRequestType _currentRequestType;
     
-    public async Task Enter(Chat chat)
+    public async Task<bool> Enter(Chat chat)
     {
+        Logger.Log((int)LogLevel.Debug, $"Enter {GetType().Name} state");
+
         _currentRequestType = EDataRequestType.AllPredictions;
         
         await bot.SendTextMessageAsync(
             chat,
             "Enter all predictions count",
             cancellationToken: ctsToken);
+
+        return false;
     }
 
     public async Task<bool> Update(Chat chat, string? queryData)
@@ -97,7 +102,7 @@ public class AdditionalInfoRequestingState(TelegramBotClient bot, ClientDataStor
         clientDataStorage.AllPredictions = _allPredictions;
         clientDataStorage.SuccessfulPredictions = _successfulPredictions;
         clientDataStorage.StartDeposit = _startDeposit;
-        Logger.Log(Logger.ELogType.Message, $"Client has entered:\nAll predictions count: {_allPredictions}\nSuccessful predictions: {_successfulPredictions}\nStart deposit: {_startDeposit}");
+        //Logger.Log((int)LogLevel.Debug, $"Client has entered:\nAll predictions count: {_allPredictions}\nSuccessful predictions: {_successfulPredictions}\nStart deposit: {_startDeposit}");
     }
 
     private async Task SendErrorMessage(Chat chat)

@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace TradingStatisticsTelegramBotCore;
 
@@ -73,6 +74,8 @@ public class TraderStatistics
 
     public static TraderStatistics Collect(List<DealData> deals, int predictionsOverallCount, int predictionsSuccessfulCount, double startDeposit, List<(DateTime, DateTime)> dateIntervals)
     {
+        Logger.Log((int) LogLevel.Debug, "Collecting statistics...");
+        
         EStatisticsTimeInterval timeIntervalType;
         
         if (dateIntervals.Count > 1)
@@ -109,7 +112,6 @@ public class TraderStatistics
             
             if (isRealDeal)
             {
-                isRealDeal = true;
                 realDealsCount++;
 
                 switch (deal.RiskResult)
@@ -145,7 +147,7 @@ public class TraderStatistics
             StartFillSubDealsAndPredictionsStatistics(GetTradingStyleStat(deal.Scenario, stats), deal, isRealDeal);
         }
         
-        stats.Finance.RiskMoneyPerDealAverageValue /= realDealsCount;
+        stats.Finance.RiskMoneyPerDealAverageValue = double.Round(stats.Finance.RiskMoneyPerDealAverageValue / realDealsCount, 2);
         stats.Finance.MoneyProfitWithoutCommissionTotalValue = double.Round(stats.Finance.MoneyNetProfitTotalValue + Math.Abs(stats.Finance.CommissionTotalValue), 1);
         stats.Finance.DepositPrevious = startDeposit;
         stats.Finance.DepositFinal = double.Round(startDeposit + stats.Finance.MoneyNetProfitTotalValue, 1);
@@ -154,7 +156,7 @@ public class TraderStatistics
         stats.Finance.MoneyNetProfitTotalValue = double.Round(stats.Finance.MoneyNetProfitTotalValue, 1);
         stats.DealsAndPredictions.PredictionsOverallCount = predictionsOverallCount;
         stats.DealsAndPredictions.PredictionsSuccessfulCount = predictionsSuccessfulCount;
-        stats.DealsAndPredictions.PredictionsSuccessfulPercent = float.Round((float)predictionsSuccessfulCount / deals.Count * 100, 1);
+        stats.DealsAndPredictions.PredictionsSuccessfulPercent = float.Round((float)predictionsSuccessfulCount / predictionsOverallCount * 100, 1);
         stats.DealsAndPredictions.DealsOverallCount = realDealsCount;
         stats.DealsAndPredictions.DealsOverallRelativeOverallPredictionsPercent = float.Round((float)realDealsCount / predictionsOverallCount * 100, 1);
         stats.DealsAndPredictions.DealsProfitableCount = successfulDealsCount;
@@ -163,8 +165,8 @@ public class TraderStatistics
         stats.DealsAndPredictions.DealsLosingRelativeOverallDealsPercent = float.Round((float)lossDealsCount / realDealsCount * 100, 1);
         stats.DealsAndPredictions.DealsBreakevenCount = breakevenDealsCount;
         stats.DealsAndPredictions.DealsBreakevenRelativeOverallDealsPercent = float.Round((float)breakevenDealsCount / realDealsCount * 100, 1);
-        stats.DealsAndPredictions.StopLossPerDealAverageValue /= lossDealsCount;
-        stats.DealsAndPredictions.TakeProfitPerDealAverageValue /= successfulDealsCount;
+        stats.DealsAndPredictions.StopLossPerDealAverageValue = double.Round(stats.DealsAndPredictions.StopLossPerDealAverageValue / lossDealsCount, 2);
+        stats.DealsAndPredictions.TakeProfitPerDealAverageValue = double.Round(stats.DealsAndPredictions.TakeProfitPerDealAverageValue / successfulDealsCount, 2);
         stats.DealsAndPredictions.RisksProfitTotalValue = stats.DealsAndPredictions.RisksEarnedTotalValue - Math.Abs(stats.DealsAndPredictions.RisksLostTotalValue);
         
         EndFillSubDealsAndPredictionsStatistics(GetMarketStat(EMarket.Forex, stats), stats);
@@ -241,6 +243,8 @@ public class TraderStatistics
 
     public static string GetText(TraderStatistics stats)
     {
+        Logger.Log((int) LogLevel.Debug, "Creating statistics message...");
+        
         var builder = new StringBuilder();
         
         string financeSign = stats.Finance.MoneyNetProfitTotalValue > 0 ? "+" : "-";
@@ -262,8 +266,8 @@ public class TraderStatistics
             intervalsText = $"\n{startDate:dd.MM.yyyy} - {endDate:dd.MM.yyyy}";
         
         builder.AppendLine($"Итог {intervalName} {intervalsText}");
-        builder.AppendLine($"• Фин.рез: {financeSign}{stats.Finance.MoneyNetProfitTotalValue}");
-        builder.AppendLine($"• Депо: {stats.Finance.DepositPrevious} => {stats.Finance.DepositFinal} ({financeSign}{stats.Finance.DepositDifferencePercent}%)");
+        builder.AppendLine($"• Фин.рез: {financeSign}{stats.Finance.MoneyNetProfitTotalValue}$");
+        builder.AppendLine($"• Депо: {stats.Finance.DepositPrevious}$ => {stats.Finance.DepositFinal}$ ({financeSign}{stats.Finance.DepositDifferencePercent}%)");
         builder.AppendLine($"");
         builder.AppendLine($"<b><u>Общая статистика по сделкам</u></b>");
         builder.AppendLine($"");

@@ -2,12 +2,12 @@
 
 var cts = new CancellationTokenSource();
 var botProcessor = new BotProcessor();
-await botProcessor.Start(cts, GetVerificationCode);
+Logger.Log += Log;
+await botProcessor.Start(true, cts);
 Console.ReadKey();
 cts.Cancel();
 
-async Task<string> GetVerificationCode()
+void Log(int logLevel, string message)
 {
-    Console.WriteLine("Enter verification code...");
-    return Console.ReadLine();
+    Console.WriteLine(message);
 }

@@ -1,8 +1,10 @@
-﻿using Telegram.Bot;
+﻿using Microsoft.Extensions.Logging;
+using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using TradingStatisticsTelegramBotCore.BotStates;
+using WTelegram;
 
 namespace TradingStatisticsTelegramBotCore;
 
@@ -11,6 +13,7 @@ public enum EBotState
     None,
     DateChoosing,
     AdditionalInfoRequesting,
+    TelegramConnectionEstablishing,
     StatisticsCollecting
 }
 
@@ -24,59 +27,84 @@ public class BotProcessorOperation
     private EBotState _currentStateType = EBotState.DateChoosing;
     private readonly EBotState _initialState = EBotState.DateChoosing;
     
-    private Chat _currentChat;
-    
+    private Chat _chat;
+    private readonly TelegramConnectionService _connectionService;
+
+
     private readonly Dictionary<EBotState, EBotState> _botStatesChain = new()
     {
         { EBotState.DateChoosing, EBotState.AdditionalInfoRequesting },
-        { EBotState.AdditionalInfoRequesting, EBotState.StatisticsCollecting },
+        { EBotState.AdditionalInfoRequesting, EBotState.TelegramConnectionEstablishing },
+        { EBotState.TelegramConnectionEstablishing, EBotState.StatisticsCollecting },
         { EBotState.StatisticsCollecting, EBotState.None },
     };
-    
+
     public BotProcessorOperation(CancellationTokenSource cts)
     {
-        Logger.Log += SendLogMessageToClient;
+        Logger.Log += LogHandler;
         
         _cts = cts;
         _bot = new TelegramBotClient(Configuration.BOT_TOKEN, cancellationToken: _cts.Token);
+        _connectionService = new TelegramConnectionService();
     }
 
-    private void SendLogMessageToClient(Logger.ELogType logType, string text)
+    private void LogHandler(int level, string message)
     {
-        _bot.SendTextMessageAsync(_currentChat, text);
+        if ((LogLevel)level == LogLevel.Debug && !Configuration.DebugEnabled)
+            return;
+        
+        SendLogMessageToClient(message);
+    }
+
+    private void SendLogMessageToClient(string message)
+    {
+        _bot.SendTextMessageAsync(_chat, message);
     }
 
     public async Task Process()
     {
         var me = await _bot.GetMeAsync(cancellationToken: _cts.Token);
-        
-        _bot.OnError += OnError;
-        _bot.OnMessage += OnMessage;
-        _bot.OnUpdate += OnUpdate;
 
-        Logger.Log(Logger.ELogType.Message, $"@{me.Username} is running... Press Enter to terminate");
-        //Console.ReadKey();
+        _bot.OnError += (x, y) => Task.Run(() => OnError(x, y));
+        _bot.OnMessage += (x, y) => Task.Run(() => OnMessage(x, y));
+        _bot.OnUpdate += (x) => Task.Run(() => OnUpdate(x));
+
+        Logger.Log((int)LogLevel.Information, $"@{me.Username} is running...");
         //await _cts.CancelAsync(); // stop the bot
     }
     
     private async Task OnError(Exception exception, HandleErrorSource source)
     {
-        Console.WriteLine(exception); // just dump the exception to the console
+        Logger.Log((int)LogLevel.Error, exception.Message);
     }
 
     private async Task OnMessage(Message msg, UpdateType type)
     {
-        Logger.Log(Logger.ELogType.Message, $"Message received from {msg.From}: {msg.Text}");
+        Logger.Log((int)LogLevel.Debug, $"Message received from {msg.From}: {msg.Text}");
         
         if (msg.Text?.ToLower() == "/start")
         {
-            _currentChat = msg.Chat;
+            _chat = msg.Chat;
             
             await _bot.SendTextMessageAsync(msg.Chat, "Welcome! I am trading statistics bot.", cancellationToken: _cts.Token);
 
             _clientDataStorage = new ClientDataStorage();
             await SetState(_initialState, msg.Chat);
             
+            return;
+        }
+
+        if (msg.Text?.ToLower() == "/debug_enable")
+        {
+            Configuration.DebugEnabled = true;
+            await _bot.SendTextMessageAsync(msg.Chat, "Debug enabled.", cancellationToken: _cts.Token);
+            return;
+        }
+
+        if (msg.Text?.ToLower() == "/debug_disable")
+        {
+            Configuration.DebugEnabled = false;
+            await _bot.SendTextMessageAsync(msg.Chat, "Debug disabled.", cancellationToken: _cts.Token);
             return;
         }
 
@@ -94,7 +122,7 @@ public class BotProcessorOperation
         
         if (update is { CallbackQuery: { } query }) // non-null CallbackQuery
         {
-            Logger.Log(Logger.ELogType.Message, $"Callback received from {query.From}: {query.Data}");
+            Logger.Log((int)LogLevel.Debug, $"Callback received from {query.From}: {query.Data}");
             
             await _bot.AnswerCallbackQueryAsync(query.Id, $"You picked {query.Data}", cancellationToken: _cts.Token);
             
@@ -121,8 +149,11 @@ public class BotProcessorOperation
             case EBotState.AdditionalInfoRequesting:
                 _currentState = new AdditionalInfoRequestingState(_bot, _clientDataStorage, _cts.Token);
                 break;
+            case EBotState.TelegramConnectionEstablishing:
+                _currentState = new TelegramConnectionEstablishingState(_bot, _connectionService, _cts.Token);
+                break;
             case EBotState.StatisticsCollecting:
-                _currentState = new StatisticsCollectingState(_bot, _clientDataStorage, _cts.Token);
+                _currentState = new StatisticsCollectingState(_bot, _clientDataStorage, _connectionService.Client, _cts.Token);
                 break;
             case EBotState.None:
                 _currentState = null;
@@ -131,9 +162,12 @@ public class BotProcessorOperation
 
         _currentStateType = state;
         
-        Logger.Log(Logger.ELogType.Message, $"Entered state: {_currentStateType}");
-        
         if (_currentState != null)
-            await _currentState.Enter(chat);
+        {
+            var forceComplete = await _currentState.Enter(chat);
+
+            if (forceComplete)
+                await SetState(GetNextState(), chat);
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Telegram.Bot;
+﻿using Microsoft.Extensions.Logging;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
@@ -18,13 +19,17 @@ public class DateChoosingState(TelegramBotClient bot, ClientDataStorage clientDa
     
     private List<(DateTime, DateTime)> _dateIntervals = [];
 
-    public async Task Enter(Chat chat)
+    public async Task<bool> Enter(Chat chat)
     {
+        Logger.Log((int)LogLevel.Debug, $"Enter {GetType().Name} state");
+
         await bot.SendTextMessageAsync(
             chat,
             "Choose time interval",
             replyMarkup: new InlineKeyboardMarkup().AddButtons(SetInteractionButtons()),
             cancellationToken: ctsToken);
+
+        return false;
     }
 
     public async Task<bool> Update(Chat chat, string? queryData)

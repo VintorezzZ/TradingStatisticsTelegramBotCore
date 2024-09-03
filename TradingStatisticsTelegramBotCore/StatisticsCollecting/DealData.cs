@@ -90,43 +90,43 @@ public class DealData
             
             if (textLine != null)
             {
-                if (textLine.Contains("Дата"))
+                if (textLine.Contains("Дата:"))
                 {
                     ParseDatetime(textLine, dealData);
                 }
-                else if (textLine.Contains("Сценарий"))
+                else if (textLine.Contains("Сценарий:"))
                 {
                     dealData.ScenarioAdditionalInfo = textLine.GetStringAfterCharWithoutSymbolsAtTheEnd(":", ['.']);
                 }
-                else if (textLine.Contains("Источник"))
+                else if (textLine.Contains("Источник:"))
                 {
                     dealData.InfoSource = textLine.GetStringAfterCharWithoutSymbolsAtTheEnd(":", ['.']);
                 }
-                else if (textLine.Contains("Уровень"))
+                else if (textLine.Contains("Уровень:"))
                 {
                     dealData.PriceLevel = textLine.GetStringAfterCharWithoutSymbolsAtTheEnd(":", ['.']);
                 }
-                else if (textLine.Contains("Энергия"))
+                else if (textLine.Contains("Энергия:"))
                 {
                     dealData.MoveEnergy = textLine.GetStringAfterCharWithoutSymbolsAtTheEnd(":", ['.']);
                 }
-                else if (textLine.Contains("Объем торгов"))
+                else if (textLine.Contains("Объем торгов:"))
                 {
                     dealData.DayTradingVolume = textLine.GetStringAfterCharWithoutSymbolsAtTheEnd(":", ['.']);
                 }
-                else if (textLine.Contains("Глобал. тренд"))
+                else if (textLine.Contains("Глобал. тренд:"))
                 {
                     dealData.GlobalTrendDirection = ParseMoveDirection(textLine);;
                 }
-                else if (textLine.Contains("Локал. тренд"))
+                else if (textLine.Contains("Локал. тренд:"))
                 {
                     dealData.LocalTrendDirection = ParseMoveDirection(textLine);
                 }
-                else if (textLine.Contains("ТВХ"))
+                else if (textLine.Contains("ТВХ:"))
                 {
                     dealData.EntryPoint = textLine.GetStringAfterCharWithoutSymbolsAtTheEnd(":", ['.']);
                 }
-                else if (textLine.Contains("СЛ"))
+                else if (textLine.Contains("СЛ:"))
                 {
                     dealData.StopLoss = textLine.GetStringAfterCharWithoutSymbolsAtTheEnd(":", ['.']);
                 }
@@ -143,17 +143,17 @@ public class DealData
                     
                     dealData.Preconditions = preconditions.ToArray();
                 }
-                else if (textLine.Contains("Отработка сценария"))
+                else if (textLine.Contains("Отработка сценария:"))
                 {
                     var result = textLine.GetStringAfterCharWithoutSymbolsAtTheEnd(":", ['.']).ToLower();
                     dealData.IsScenarioSuccessful = result.Contains("да");
                 }
-                else if (textLine.Contains("Системная сделка"))
+                else if (textLine.Contains("Системная сделка:"))
                 {
                     var result = textLine.GetStringAfterCharWithoutSymbolsAtTheEnd(":", ['.']).ToLower();
                     dealData.IsScenarioSystemic = result.Contains("да");
                 }
-                else if (textLine.Contains("Продолжительность"))
+                else if (textLine.Contains("Продолжительность:"))
                 {
                     var timeText = textLine.GetStringAfterCharWithoutSymbolsAtTheEnd(":", ['.']);
                     var words = timeText.Split(' ').ToList();
@@ -172,7 +172,7 @@ public class DealData
                     var duration = new TimeSpan(hours, minutes, 0);
                     dealData.Duration = duration;
                 }
-                else if (textLine.Contains("Торговый результат"))
+                else if (textLine.Contains("Торговый результат:"))
                 {
                     var dealResultText = textLine.GetStringAfterCharWithoutSymbolsAtTheEnd(":", ['.']);
                     var words = dealResultText.Split(' ').ToList();
@@ -181,7 +181,7 @@ public class DealData
                     dealData.ResultType = Enum.Parse<EResultType>(words[0].TrimEnd('.').Replace("#", ""));
                     dealData.RiskResult = double.Parse(words[1].TrimEnd('.').Replace("R", "").Replace(".", ","));
                 }
-                else if (textLine.Contains("Потенциал"))
+                else if (textLine.Contains("Потенциал:"))
                 {
                     var potentialText = textLine.GetStringAfterCharWithoutSymbolsAtTheEnd(":", ['.']).Split("R")[0].Replace(" ", "");
                     
@@ -194,7 +194,7 @@ public class DealData
                     var d = double.Parse(potentialText.Replace(".", ","));
                     dealData.RiskPotential = d;
                 }
-                else if (textLine.Contains("Перезаходы"))
+                else if (textLine.Contains("Перезаходы:"))
                 {
                     if (dealData.ResultType == EResultType.Idea)
                         continue;
@@ -207,7 +207,7 @@ public class DealData
                     
                     dealData.ReEntriesCount = reEntriesCount;
                 }
-                else if (textLine.Contains("Риск"))
+                else if (textLine.Contains("Риск:"))
                 {
                     if (dealData.ResultType == EResultType.Idea)
                         continue;
@@ -217,7 +217,7 @@ public class DealData
                     if (!text.IsNullOrEmpty())
                         dealData.RiskMoneyValue = double.Parse(text);
                 }
-                else if (textLine.Contains("Объем"))
+                else if (textLine.Contains("Объем:"))
                 {
                     if (dealData.ResultType == EResultType.Idea)
                         continue;
@@ -229,7 +229,7 @@ public class DealData
                     if (words.Count > 0 && double.TryParse(words[0], out var assetVolume))
                         dealData.AssetVolume = assetVolume;
                 }
-                else if (textLine.Contains("Комиссия"))
+                else if (textLine.Contains("Комиссия:"))
                 {
                     if (dealData.ResultType == EResultType.Idea)
                         continue;
@@ -241,7 +241,7 @@ public class DealData
                     if (words.Count > 0 && double.TryParse(words[0], out var commisionValue))
                         dealData.CommissionValue = commisionValue;
                 }
-                else if (textLine.Contains("Фин.рез"))
+                else if (textLine.Contains("Фин.рез:"))
                 {
                     if (dealData.ResultType == EResultType.Idea)
                         continue;
@@ -253,11 +253,11 @@ public class DealData
                     if (words.Count > 0 && double.TryParse(words[0], out var financialResult))
                         dealData.FinancialResult = financialResult;
                 }
-                else if (textLine.Contains("Ошибки"))
+                else if (textLine.Contains("Ошибки:"))
                 {
                     dealData.MistakesText = textLine.GetStringAfterCharWithoutSymbolsAtTheEnd(":", ['.']);
                 }
-                else if (textLine.Contains("Коммент"))
+                else if (textLine.Contains("Коммент:"))
                 {
                     var comment = textLine.Split(":")[1];
                     textLine = reader.ReadToEnd();
